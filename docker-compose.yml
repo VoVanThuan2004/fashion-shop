@@ -1,0 +1,26 @@
+services:
+  # Database for MenuService
+  fashion-mysql:
+    image: mysql:8
+    container_name: fashion-mysql
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=fashion_clothes_db
+    volumes:
+      - fashion_mysql_data:/var/lib/mysql
+    networks:
+      - shared_network
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      retries: 5
+
+volumes:
+  fashion_mysql_data:
+
+networks:
+  shared_network:
+    external: true
