@@ -46,13 +46,6 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 
     @Query("select p from Product p where p.category.categoryParent.categoryId = :categoryId")
     Page<Product> findAllProductsBelongToCategoryParent(@Param("categoryId") int categoryId, Pageable pageable);
-
-    // Lấy danh sách products theo wishListId
-    @Query("""
-        select p from Product p
-        where p.wishlist.wishListId = :wishlistId
-    """)
-    Page<Product> findAllByWishListId(@Param("wishListId") int wishListId, Pageable pageable);
 }
 
 

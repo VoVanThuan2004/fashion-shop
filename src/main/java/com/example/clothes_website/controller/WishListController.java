@@ -7,9 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -27,5 +25,15 @@ public class WishListController {
         int userId = customUserDetails.getId();
 
         return wishListService.getWishList(userId, page, size);
+    }
+
+    // Chọn sản phẩm vào danh mục yêu thích
+    @PostMapping("/api/v1/wishlist/{productId}")
+    public ResponseEntity<ApiResponse<?>> addProductToWishList(@PathVariable int productId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
+        int userId = customUserDetails.getId();
+
+        return wishListService.addProductToWishList(productId, userId);
     }
 }

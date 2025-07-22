@@ -17,9 +17,4 @@ public class WishList {
     @OneToOne
     @JoinColumn(name = "user_id")
     private Users user;
-
-    private int productsQuantity;
-
-    @OneToMany(mappedBy = "wishlist", fetch = FetchType.LAZY)
-    private List<Product> products;
 }

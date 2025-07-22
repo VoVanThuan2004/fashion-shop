@@ -5,4 +5,6 @@ import org.springframework.http.ResponseEntity;
 
 public interface WishListService {
     ResponseEntity<ApiResponse<?>> getWishList(int userId, int page, int size);
+
+    ResponseEntity<ApiResponse<?>> addProductToWishList(int productId, int userId);
 }

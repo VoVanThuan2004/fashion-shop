@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 @Setter @Getter
 @Builder
 public class ProductResponse {
+    private int productId;
     private String name;
     private double price;
     private String description;
