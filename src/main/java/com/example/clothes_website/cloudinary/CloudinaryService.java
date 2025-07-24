@@ -55,4 +55,32 @@ public class CloudinaryService {
             return false;
         }
     }
+
+    // upload file (ảnh, pdf,...)
+    public UploadResult uploadFile (MultipartFile file) throws IOException {
+        String contentType = file.getContentType();
+        String resourceType;
+
+        if (contentType == null) {
+            throw new IllegalArgumentException("Không xác định được loại file");
+        }
+
+        if (contentType.startsWith("image/")) {
+            resourceType = "image";
+        } else if (contentType.startsWith("video/")) {
+            resourceType = "video";
+        } else {
+            resourceType = "raw";
+        }
+
+        Map uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
+                "resource_type", resourceType,
+                "upload_preset", upload_preset
+        ));
+
+        String url = (String) uploadResult.get("secure_url");
+        String publicId = (String) uploadResult.get("public_id");
+
+        return new UploadResult(url, publicId);
+    }
 }

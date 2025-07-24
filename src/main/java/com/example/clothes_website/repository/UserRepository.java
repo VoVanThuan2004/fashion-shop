@@ -15,4 +15,7 @@ public interface UserRepository extends JpaRepository<Users, Integer> {
     Page<Users> findCustomers(Pageable pageable);
 
     Optional<Users> findByEmail(String email);
+
+    @Query("SELECT u FROM Users u JOIN u.userRoles ur JOIN ur.role r WHERE r.roleName = 'ADMIN'")
+    Optional<Users> findAdmin();
 }

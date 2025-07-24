@@ -18,6 +18,11 @@ public class ImageMessages {
 
     private String imagePath;
 
+    // Lưu thông tin về file trên cloudinary
+    private String publicId;
+    private String fileName;
+    private String fileType;
+
     @ManyToOne
     @JoinColumn(name = "message_id")
     private Messages message;
