@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Set;
 
 @Entity
-@Table
+@Table(indexes = {
+        @Index(name = "idx_users_email", columnList = "email")
+})
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter @Setter
@@ -41,4 +43,8 @@ public class Users {
     // Sản phẩm yêu thích của người dùng
     @OneToOne(mappedBy = "user")
     private WishList wishlist;
+
+    // Giỏ hàng
+    @OneToOne(mappedBy = "user")
+    private Cart cart;
 }

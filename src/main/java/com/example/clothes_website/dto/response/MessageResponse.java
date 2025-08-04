@@ -18,4 +18,5 @@ public class MessageResponse {
     private LocalDateTime sendTime;
     private List<String> files;
     private int conversationId;
+    private boolean isRead;
 }

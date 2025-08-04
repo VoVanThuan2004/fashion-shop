@@ -1,6 +1,8 @@
 package com.example.clothes_website.repository;
 
 import com.example.clothes_website.entity.Conversations;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,4 +15,9 @@ public interface ConversationRepository extends JpaRepository<Conversations, Int
         where c.customer.userId = :customerId
     """)
     Optional<Conversations> findConversationsByCustomerId(@Param("customerId") int customerId);
+
+    @Query("""
+        select c from Conversations c
+    """)
+    Page<Conversations> findAllConversation(Pageable pageable);
 }

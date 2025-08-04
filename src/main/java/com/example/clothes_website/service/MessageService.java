@@ -12,4 +12,10 @@ public interface MessageService {
     ResponseEntity<ApiResponse<?>> sendMessage(int userId, MessageRequest messageRequest, List<MultipartFile> files);
 
     ResponseEntity<ApiResponse<?>> createConversation(int userId);
+
+    ResponseEntity<ApiResponse<?>> getAllMessagesInConversation(int conversationId, int page, int size);
+
+    ResponseEntity<ApiResponse<?>> markAsRead(int conversationId, int userId);
+
+    ResponseEntity<ApiResponse<?>> getAllConversations(int userId, int page, int size);
 }

@@ -25,10 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +39,7 @@ public class UserServiceImpl implements UserService {
     private final JwtTokenUtil jwtTokenUtil;
     private final RefreshTokenRepository refreshTokenRepository;
     private final WishListRepository wishListRepository;
+    private final CartRepository cartRepository;
 
     @Override
     public ApiResponse<?> getAllCustomers(Pageable pageable) {
@@ -188,6 +186,12 @@ public class UserServiceImpl implements UserService {
         WishList wishList = new WishList();
         wishList.setUser(userCreated.get());
         wishListRepository.save(wishList);
+
+        // Tạo giỏ hàng trống
+        Cart cart = new Cart();
+        cart.setUser(userCreated.get());
+        cart.setCartItems(new ArrayList<>());
+        cartRepository.save(cart);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.builder()

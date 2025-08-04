@@ -1,5 +1,6 @@
 package com.example.clothes_website.websocket;
 
+import com.example.clothes_website.dto.response.ConversationResponse;
 import com.example.clothes_website.dto.response.MessageResponse;
 import com.example.clothes_website.entity.ImageMessages;
 import com.example.clothes_website.entity.Messages;
@@ -27,6 +28,21 @@ public class MessageSocket {
                 )
                 .build();
 
+        // Cập nhật lại danh sách cuộc hội thoại cho người nhận - khi có tin nhắn mới
+        ConversationResponse conversationResponse = ConversationResponse.builder()
+                .conversationId(message.getConversation().getConversationId())
+                .customerId(message.getConversation().getCustomer().getUserId())
+                .customerName(message.getConversation().getCustomer().getFullName())
+                .avatar(message.getConversation().getCustomer().getImage())
+                .lastMessage(message.getTextMessage() != null
+                                ? message.getTextMessage()
+                                : "Đã gửi tệp đính kèm"
+                        )
+                .lastMessageTime(message.getConversation().getLastMessageTime())
+                .isRead(false)
+                .build();
+
         messagingTemplate.convertAndSend("/topic/messages/" + message.getConversation().getConversationId(), messageResponse);
+        messagingTemplate.convertAndSend("/topic/conversation/" + conversationResponse.getCustomerId(), conversationResponse);
     }
 }

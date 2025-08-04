@@ -30,4 +30,5 @@ public class Conversations {
     private List<Messages> messages;
 
     private LocalDateTime createTime;
+    private LocalDateTime lastMessageTime;
 }
