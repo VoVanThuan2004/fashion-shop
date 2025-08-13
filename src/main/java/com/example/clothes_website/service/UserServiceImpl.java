@@ -450,6 +450,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<ApiResponse<?>> login(LoginRequest loginRequest, HttpServletRequest request) {
         // Check email
         Optional<Users> user = userRepository.findByEmail(loginRequest.getEmail());
@@ -506,6 +507,9 @@ public class UserServiceImpl implements UserService {
         // Generate token
         String accessToken = jwtTokenUtil.generateToken(tokenPayload, accessTokenTime);
         String refreshToken = jwtTokenUtil.generateToken(tokenPayload, refreshTokenTime);
+
+        // Xóa mã RefreshToken cũ nếu tồn tại
+        refreshTokenRepository.deleteByUserId(user.get().getUserId());
 
         // Save RefreshToken
         RefreshToken refreshTokenDB = RefreshToken.builder()

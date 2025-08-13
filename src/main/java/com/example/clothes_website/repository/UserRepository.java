@@ -5,7 +5,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 
@@ -18,4 +20,25 @@ public interface UserRepository extends JpaRepository<Users, Integer> {
 
     @Query("SELECT u FROM Users u JOIN u.userRoles ur JOIN ur.role r WHERE r.roleName = 'ADMIN'")
     Optional<Users> findAdmin();
+
+
+    @Query("""
+        select count(u) from Users u
+        join u.userRoles ur
+        join ur.role r
+        where r.roleName <> 'ADMIN'
+    """)
+    Integer getTotalUsers();  // Lấy tổng người dùng hiện tại (trừ ADMIN)
+
+    @Query("""
+        select count(u) from Users u
+        join u.userRoles ur
+        join ur.role r
+        where r.roleName <> 'ADMIN'
+        and u.createTime >= :startTime and u.createTime < :endTime
+    """)
+    Integer getTotalNewUsers
+            (@Param("startTime") LocalDateTime startTime, // Lấy tổng người dùng mới (trừ ADMIN)
+             @Param("endTime") LocalDateTime endTime
+            );
 }

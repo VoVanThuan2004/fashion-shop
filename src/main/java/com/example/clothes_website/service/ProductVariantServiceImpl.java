@@ -36,7 +36,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         if (product.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.builder()
-                            .status("success")
+                            .status("error")
                             .code(HttpStatus.NOT_FOUND.value())
                             .message("Product không tồn tại")
                             .build());
@@ -47,7 +47,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         if (variantImageGroup.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.builder()
-                            .status("success")
+                            .status("error")
                             .code(HttpStatus.NOT_FOUND.value())
                             .message("ID ảnh của sản phẩm không hợp lệ - groupID: " + productVariantRequest.getVariantImageGroupId())
                             .build());
@@ -57,7 +57,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         if (productVariantRequest.getAttributeValueIds().size() != 2) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.builder()
-                            .status("success")
+                            .status("error")
                             .code(HttpStatus.BAD_REQUEST.value())
                             .message("Attribute Value ID chỉ có 2 giá trị")
                             .build());
@@ -68,7 +68,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         if (v1.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.builder()
-                            .status("success")
+                            .status("error")
                             .code(HttpStatus.NOT_FOUND.value())
                             .message("Giá trị thuộc tính không tồn tại - ID: " + productVariantRequest.getProductId())
                             .build());
@@ -76,7 +76,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         if (v2.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.builder()
-                            .status("success")
+                            .status("error")
                             .code(HttpStatus.NOT_FOUND.value())
                             .message("Giá trị thuộc tính không tồn tại - ID: " + productVariantRequest.getProductId())
                             .build());
