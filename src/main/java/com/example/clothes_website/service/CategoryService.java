@@ -3,18 +3,21 @@ package com.example.clothes_website.service;
 import com.example.clothes_website.dto.response.ApiResponse;
 import com.example.clothes_website.dto.request.CategoryRequest;
 import com.example.clothes_website.dto.request.CategoryUpdate;
+import com.example.clothes_website.dto.response.CategoryResponse;
 import org.springframework.http.ResponseEntity;
 
+import java.util.List;
+
 public interface CategoryService {
-    ResponseEntity<ApiResponse<?>> getAllCategoryParent();
+    List<CategoryResponse> getAllCategoryParent();
 
-    ResponseEntity<ApiResponse<?>> getAllCategoryByParentId(int categoryParentId);
+    List<CategoryResponse> getAllCategoryByParentId(int categoryParentId);
 
-    ResponseEntity<ApiResponse<?>> addParentCategory(CategoryRequest categoryRequest);
+    CategoryResponse addParentCategory(CategoryRequest categoryRequest);
 
-    ResponseEntity<ApiResponse<?>> addCategoryByParentId(int categoryParentId, CategoryRequest categoryRequest);
+    CategoryResponse addCategoryByParentId(int categoryParentId, CategoryRequest categoryRequest);
 
-    ResponseEntity<ApiResponse<?>> deleteCategoryByParentId(int categoryParentId);
+    void deleteCategoryByParentId(int categoryParentId);
 
-    ResponseEntity<ApiResponse<?>> updateParentCategory(int categoryId, CategoryUpdate categoryUpdate);
+    CategoryResponse updateCategory(int categoryId, CategoryUpdate categoryUpdate);
 }

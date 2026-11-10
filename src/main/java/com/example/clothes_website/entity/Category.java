@@ -2,7 +2,10 @@ package com.example.clothes_website.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,8 +21,16 @@ public class Category {
     private int categoryId;
 
     private String categoryName;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+
+    @CreationTimestamp
+    private Instant createTime;
+
+    @UpdateTimestamp
+    @Column(updatable = false)
+    private Instant updateTime;
+
+    @Builder.Default
+    private boolean deleted = false;
 
     // Self reference (mối quan hệ đệ quy)
     // Nhiều category con thuộc về 1 category cha
