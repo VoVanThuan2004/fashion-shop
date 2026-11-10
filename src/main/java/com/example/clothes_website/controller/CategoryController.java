@@ -6,6 +6,7 @@ import com.example.clothes_website.dto.request.CategoryUpdate;
 import com.example.clothes_website.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -26,6 +27,7 @@ public class CategoryController {
     }
 
     @PostMapping("/api/v1/category-parent")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> addParentCategory(@RequestBody CategoryRequest categoryRequest) {
         return categoryService.addParentCategory(categoryRequest);
     }
@@ -36,12 +38,14 @@ public class CategoryController {
     }
 
     @DeleteMapping("/api/v1/category/{categoryParentId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> deleteCategoryByParentId(@PathVariable int categoryParentId) {
         return categoryService.deleteCategoryByParentId(categoryParentId);
     }
 
     // Update category parent
-    @PutMapping("/api/v1/category-parent/{categoryId}")
+    @PutMapping("/api/v1/category/{categoryId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> updateParentCategory(@PathVariable int categoryId, @RequestBody CategoryUpdate categoryUpdate) {
         return categoryService.updateParentCategory(categoryId, categoryUpdate);
     }

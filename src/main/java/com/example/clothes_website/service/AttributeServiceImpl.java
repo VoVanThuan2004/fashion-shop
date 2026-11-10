@@ -24,47 +24,82 @@ public class AttributeServiceImpl implements AttributeService {
 
     @Override
     public ResponseEntity<ApiResponse<?>> addAttribute(AttributeRequest attributeRequest) {
-        String code = toSlug(attributeRequest.getName());
+        try {
+            String code = toSlug(attributeRequest.getName());
 
-        // Check code có ton tại kh
-        Optional<Attribute> attribute = attributeRepository.findByCode(code);
-        if (attribute.isPresent()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            // Check code có ton tại kh
+            Optional<Attribute> attribute = attributeRepository.findByCode(code);
+            if (attribute.isPresent()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(HttpStatus.BAD_REQUEST.value())
+                                .message("Thuộc tính " + attributeRequest.getName() + " đã tồn tại")
+                                .build());
+            }
+
+            Attribute at = new Attribute();
+            at.setName(attributeRequest.getName());
+            at.setCode(code);
+            at.setType(attributeRequest.getType());
+            at.setPriority(attributeRequest.getPriority());
+            at = attributeRepository.save(at);
+
+            AttributeResponse attributeResponse = AttributeResponse.builder()
+                    .attributeId(at.getAttributeId())
+                    .name(at.getName())
+                    .code(at.getCode())
+                    .type(at.getType())
+                    .priority(at.getPriority())
+                    .build();
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.builder()
+                            .status("success")
+                            .code(HttpStatus.CREATED.value())
+                            .message("Thuộc tính đã tạo thành công")
+                            .data(attributeResponse)
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.builder()
                             .status("error")
-                            .code(HttpStatus.BAD_REQUEST.value())
-                            .message("Thuộc tính " + attributeRequest.getName() + " đã tồn tại")
+                            .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .message("Lỗi hệ thống: " + e.getMessage())
                             .build());
         }
-
-        Attribute at = new Attribute();
-        at.setName(attributeRequest.getName());
-        at.setCode(code);
-        at.setType(attributeRequest.getType());
-        at.setPriority(attributeRequest.getPriority());
-        attributeRepository.save(at);
-
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.builder()
-                        .status("success")
-                        .code(HttpStatus.CREATED.value())
-                        .message("Thuộc tính đã tạo thành công")
-                        .build());
     }
 
     @Override
-    public List<AttributeResponse> getAllAttributes() {
-        List<Attribute> attributes = attributeRepository.findAll();
+    public ResponseEntity<ApiResponse<?>> getAllAttributes() {
+        try {
+            List<Attribute> attributes = attributeRepository.findAll();
 
-        return attributes.stream()
-                .map(attribute -> AttributeResponse.builder()
-                        .attributeId(attribute.getAttributeId())
-                        .name(attribute.getName())
-                        .code(attribute.getCode())
-                        .type(attribute.getType())
-                        .priority(attribute.getPriority())
-                        .build())
-                .toList();
+            List<AttributeResponse> attributeResponses = attributes.stream()
+                    .map(attribute -> AttributeResponse.builder()
+                            .attributeId(attribute.getAttributeId())
+                            .name(attribute.getName())
+                            .code(attribute.getCode())
+                            .type(attribute.getType())
+                            .priority(attribute.getPriority())
+                            .build())
+                    .toList();
+
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.builder()
+                            .status("success")
+                            .code(HttpStatus.OK.value())
+                            .message("Lấy danh sách thuộc tính")
+                            .data(attributeResponses)
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.builder()
+                            .status("error")
+                            .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .message("Lỗi hệ thống: " + e.getMessage())
+                            .build());
+        }
     }
 
     @Override
@@ -110,6 +145,49 @@ public class AttributeServiceImpl implements AttributeService {
                         .code(HttpStatus.OK.value())
                         .message("Thuộc tính đã cập nhật thành công")
                         .build());
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<?>> deleteAttribute(int attributeId) {
+        try {
+            Optional<Attribute> attribute = attributeRepository.findById(attributeId);
+            if (attribute.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(HttpStatus.NOT_FOUND.value())
+                                .message("Thuộc tính không tồn tại")
+                                .build());
+            }
+
+            // Kiểm tra nếu thuộc tính nó giá trị con -> không cho xóa
+            if (!attribute.get().getAttributeValues().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(HttpStatus.BAD_REQUEST.value())
+                                .message("Thuộc tính hiện đang có giá trị")
+                                .build());
+            }
+
+            // Xóa thuộc tính
+            attributeRepository.delete(attribute.get());
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.builder()
+                            .status("success")
+                            .code(HttpStatus.OK.value())
+                            .message("Xóa thuộc tính thành công")
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.builder()
+                            .status("error")
+                            .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .message("Lỗi hệ thống: " + e.getMessage())
+                            .build());
+        }
+
+
     }
 
     private String toSlug(String input) {

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+// Xử lý khi request thiếu token, hoặc token hết hạn
 @Component
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
 

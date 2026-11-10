@@ -48,13 +48,14 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/admin/**").permitAll()
                         .requestMatchers("/api/v1/register/users").permitAll()
-                        .requestMatchers("/api/v1/verify-otp").permitAll()
+                        .requestMatchers("/api/v1/recovery-password").permitAll()
+                        .requestMatchers("/api/v1/verify-otp/password").permitAll()
                         .requestMatchers("/api/v1/update/users/**").permitAll()
                         .requestMatchers("/api/v1/login").permitAll()
                         .requestMatchers("/api/v1/logout").permitAll()
                         .requestMatchers("/api/v1/refresh-token").permitAll()
-                        .requestMatchers("/api/v1/category-parent/**").permitAll()
-                        .requestMatchers("/api/v1/category/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/v1/category-parent/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/v1/category/**").permitAll()
                         .requestMatchers("/api/v1/brand**").permitAll()
                         .requestMatchers("/api/v1/products**").permitAll()
                         .requestMatchers("/api/v1/products/**").permitAll()
@@ -87,9 +88,13 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://127.0.0.1:5500")); // Origin của client
+        configuration.setAllowedOrigins(List.of("http://localhost:3000")); // Origin của client
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowedHeaders(List.of(
+                "Authorization",
+                "Cache-Control",
+                "Content-Type",
+                "X-Requested-With"));
         configuration.setAllowCredentials(true); // Nếu cần gửi credentials (JWT qua header)
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

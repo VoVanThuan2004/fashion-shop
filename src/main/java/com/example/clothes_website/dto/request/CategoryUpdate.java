@@ -8,5 +8,5 @@ import lombok.Setter;
 @Builder
 public class CategoryUpdate {
     private String categoryName;
-    private int parentId;
+    private Integer parentId;
 }

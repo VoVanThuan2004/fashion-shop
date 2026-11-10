@@ -8,6 +8,7 @@ import lombok.Setter;
 @Builder
 public class VerifyOTPRecoveryPassword {
     private String email;
-    private String password;
     private String otp;
+    private String password;
+    private String confirmPassword;
 }

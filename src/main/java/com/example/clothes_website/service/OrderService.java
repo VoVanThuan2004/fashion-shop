@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 
 import java.io.UnsupportedEncodingException;
+import java.time.LocalDateTime;
 
 public interface OrderService {
     ResponseEntity<ApiResponse<?>> placeOrder(Integer userId, OrderRequest orderRequest, HttpServletRequest request) throws UnsupportedEncodingException;
@@ -15,5 +16,5 @@ public interface OrderService {
 
     ResponseEntity<ApiResponse<?>> getAllOrdersOfUser(int userId, int page, int size);
 
-    ResponseEntity<ApiResponse<?>> getAllOrders(int userId, int page, int size);
+    ResponseEntity<ApiResponse<?>> getAllOrders(int userId, int page, int size, LocalDateTime startTime, LocalDateTime endTime);
 }

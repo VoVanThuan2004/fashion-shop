@@ -14,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.UnsupportedEncodingException;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -54,11 +55,13 @@ public class OrderController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> getAllOrders(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
-    ) {
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam LocalDateTime startTime,
+            @RequestParam LocalDateTime endTime
+            ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
         int userId = customUserDetails.getUserId();
-        return orderService.getAllOrders(userId, page, size);
+        return orderService.getAllOrders(userId, page, size, startTime, endTime);
     }
 }

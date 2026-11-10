@@ -33,6 +33,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordEncoder hashedOTP;
     private final UserRoleRepository userRoleRepository;
     private final EmailService emailService;
     private final CloudinaryService cloudinaryService;
@@ -119,7 +120,7 @@ public class UserServiceImpl implements UserService {
         user.setEmail(userCreate.getEmail());
         user.setPassword(passwordEncoder.encode(userCreate.getPassword()));
         user.setActive(false);
-        user.setResetOtp(otp);
+        user.setResetOtp(hashedOTP.encode(otp));
         user.setResetOtpExpired(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusMinutes(5));
         user = userRepository.save(user);
 
@@ -155,7 +156,7 @@ public class UserServiceImpl implements UserService {
         }
 
         // Check mã OTP + thời gian hết hạn
-        if (!verifyOTP.getOtp().equals(users.get().getResetOtp())) {
+        if (!hashedOTP.matches(verifyOTP.getOtp(), users.get().getResetOtp())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.builder()
                             .status("error")
@@ -372,247 +373,307 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResponseEntity<ApiResponse<?>> recoveryPassword(String email) {
-        // Check email
-        Optional<Users> user = userRepository.findByEmail(email);
-        if (user.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        try {
+            // Check email
+            Optional<Users> user = userRepository.findByEmail(email);
+            if (user.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(404)
+                                .message("Email does not exist")
+                                .build());
+            }
+
+            // Tạo mã OTP + gửi mail
+            String otp = String.format("%06d", new Random().nextInt(1000000));
+
+            user.get().setResetOtp(hashedOTP.encode(otp));
+            user.get().setResetOtpExpired(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusMinutes(5));
+            userRepository.save(user.get());
+
+            emailService.sendOTPEmailRecoveryPassword(email, otp);
+
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.builder()
+                            .status("success")
+                            .code(200)
+                            .message("OTP code sent to your email")
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.builder()
                             .status("error")
-                            .code(404)
-                            .message("Email does not exist")
+                            .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .message("Lỗi hệ thống: " + e.getMessage())
                             .build());
         }
-
-        // Tạo mã OTP + gửi mail
-        String otp = String.format("%06d", new Random().nextInt(1000000));
-
-        user.get().setResetOtp(otp);
-        user.get().setResetOtpExpired(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusMinutes(5));
-        userRepository.save(user.get());
-
-        emailService.sendOTPEmailRecoveryPassword(email, otp);
-
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(ApiResponse.builder()
-                        .status("success")
-                        .code(200)
-                        .message("OTP code sent to your email")
-                        .build());
     }
 
     @Override
     public ResponseEntity<ApiResponse<?>> verifyOTPPassword(VerifyOTPRecoveryPassword verifyOTPRecoveryPassword) {
-        // Check email
-        Optional<Users> user = userRepository.findByEmail(verifyOTPRecoveryPassword.getEmail());
-        if (user.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.builder()
-                            .status("error")
-                            .code(404)
-                            .message("Email does not exist")
-                            .build());
-        }
+       try {
+           // Check email
+           Optional<Users> user = userRepository.findByEmail(verifyOTPRecoveryPassword.getEmail());
+           if (user.isEmpty()) {
+               return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                       .body(ApiResponse.builder()
+                               .status("error")
+                               .code(404)
+                               .message("Email does not exist")
+                               .build());
+           }
 
-        // Check OTP
-        if (!user.get().getResetOtp().equals(verifyOTPRecoveryPassword.getOtp())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.builder()
-                            .status("error")
-                            .code(400)
-                            .message("OTP code is incorrect")
-                            .build());
-        }
+           // Check OTP
+           if (!hashedOTP.matches(verifyOTPRecoveryPassword.getOtp(), user.get().getResetOtp())) {
+               return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                       .body(ApiResponse.builder()
+                               .status("error")
+                               .code(400)
+                               .message("Mã OTP không hợp lệ")
+                               .build());
+           }
 
-        // Check expired time OTP
-        if (user.get().getResetOtpExpired().isBefore(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")))) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.builder()
-                            .status("error")
-                            .code(400)
-                            .message("OTP code is expired")
-                            .build());
-        }
+           // Check expired time OTP
+           if (user.get().getResetOtpExpired().isBefore(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")))) {
+               return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                       .body(ApiResponse.builder()
+                               .status("error")
+                               .code(400)
+                               .message("Mã OTP hết hạn")
+                               .build());
+           }
+
+           // Kiểm tra password & confirmPassword
+           if (!verifyOTPRecoveryPassword.getPassword().equals(verifyOTPRecoveryPassword.getConfirmPassword())) {
+               return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                       .body(ApiResponse.builder()
+                               .status("error")
+                               .code(400)
+                               .message("Mật khẩu không khớp nhau")
+                               .build());
+           }
 
 
-        // Cập nhật user
-        user.get().setPassword(passwordEncoder.encode(verifyOTPRecoveryPassword.getPassword()));
-        user.get().setUpdateTime(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")));
-        user.get().setResetOtp(null);
-        user.get().setResetOtpExpired(null);
-        userRepository.save(user.get());
+           // Cập nhật user
+           user.get().setPassword(passwordEncoder.encode(verifyOTPRecoveryPassword.getPassword()));
+           user.get().setUpdateTime(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")));
+           user.get().setResetOtp(null);
+           user.get().setResetOtpExpired(null);
+           userRepository.save(user.get());
 
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(ApiResponse.builder()
-                        .status("success")
-                        .code(200)
-                        .message("Recovery password successfully")
-                        .build());
+           return ResponseEntity.status(HttpStatus.OK)
+                   .body(ApiResponse.builder()
+                           .status("success")
+                           .code(200)
+                           .message("Khôi phục mật khẩu thành công")
+                           .build());
+       } catch (Exception e) {
+           return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                   .body(ApiResponse.builder()
+                           .status("error")
+                           .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                           .message("Lỗi hệ thống: " + e.getMessage())
+                           .build());
+       }
     }
 
     @Override
     @Transactional
     public ResponseEntity<ApiResponse<?>> login(LoginRequest loginRequest, HttpServletRequest request) {
-        // Check email
-        Optional<Users> user = userRepository.findByEmail(loginRequest.getEmail());
-        if (user.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        try {
+            // Check email
+            Optional<Users> user = userRepository.findByEmail(loginRequest.getEmail());
+            if (user.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(404)
+                                .message("Email không hợp lệ")
+                                .build());
+            }
+
+            // Check password
+            if (!passwordEncoder.matches(loginRequest.getPassword(), user.get().getPassword())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(400)
+                                .message("Mật khẩu không hợp lệ")
+                                .build());
+            }
+
+            // Check account locked
+            if (!user.get().isActive()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(400)
+                                .message("Tài khoản đã bị khóa")
+                                .build());
+            }
+
+            // Generate time for accessToken
+            final int accessTokenTime = 60 * 60;    // 1 hour
+            final int refreshTokenTime = 30 * 24 * 60 * 60;     // 30 days
+
+
+            Optional<UserRole> userRole = userRoleRepository.findFirstByUser_UserId(user.get().getUserId());
+            if (userRole.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(404)
+                                .message("User role not found")
+                                .build());
+            }
+
+            // Xóa mã Refresh Token cũ nếu tồn tại
+            if (!user.get().getRefreshTokens().isEmpty()) {
+                refreshTokenRepository.deleteAll(user.get().getRefreshTokens());
+            }
+
+            // Create TokenPayload
+            TokenPayload tokenPayload = new TokenPayload();
+            tokenPayload.setUserId(user.get().getUserId());
+            tokenPayload.setFullName(user.get().getFullName());
+            tokenPayload.setRole(userRole.get().getRole().getRoleName());
+
+            // Generate token
+            String accessToken = jwtTokenUtil.generateToken(tokenPayload, accessTokenTime);
+            String refreshToken = jwtTokenUtil.generateToken(tokenPayload, refreshTokenTime);
+
+            // Xóa mã RefreshToken cũ nếu tồn tại
+            refreshTokenRepository.deleteByUserId(user.get().getUserId());
+
+            // Save RefreshToken
+            RefreshToken refreshTokenDB = RefreshToken.builder()
+                    .refreshToken(refreshToken)
+                    .user(user.get())
+                    .userAgent(request.getHeader("User-Agent"))
+                    .ipAddress(request.getRemoteAddr())
+                    .createTime(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")))
+                    .expireTime(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusDays(30))
+                    .build();
+
+            refreshTokenRepository.save(refreshTokenDB);
+
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.builder()
+                            .status("success")
+                            .code(200)
+                            .message("Successfully logged in")
+                            .data(LoginResponse.builder()
+                                    .accessToken(accessToken)
+                                    .refreshToken(refreshToken)
+                                    .userId(user.get().getUserId())
+                                    .fullName(user.get().getFullName())
+                                    .build())
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.builder()
                             .status("error")
-                            .code(404)
-                            .message("Email does not exist")
+                            .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .message("Lỗi hệ thống: " + e.getMessage())
                             .build());
         }
-
-        // Check password
-        if (!passwordEncoder.matches(loginRequest.getPassword(), user.get().getPassword())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.builder()
-                            .status("error")
-                            .code(400)
-                            .message("Wrong password")
-                            .build());
-        }
-
-        // Check account locked
-        if (!user.get().isActive()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.builder()
-                            .status("error")
-                            .code(400)
-                            .message("Account user is locked")
-                            .build());
-        }
-
-        // Generate time for accessToken
-        final int accessTokenTime = 60 * 60;    // 1 hour
-        final int refreshTokenTime = 30 * 24 * 60 * 60;     // 30 days
-
-
-        Optional<UserRole> userRole = userRoleRepository.findFirstByUser_UserId(user.get().getUserId());
-        if (userRole.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.builder()
-                            .status("error")
-                            .code(404)
-                            .message("User role not found")
-                            .build());
-        }
-
-        // Create TokenPayload
-        TokenPayload tokenPayload = new TokenPayload();
-        tokenPayload.setUserId(user.get().getUserId());
-        tokenPayload.setFullName(user.get().getFullName());
-        tokenPayload.setRole(userRole.get().getRole().getRoleName());
-
-        // Generate token
-        String accessToken = jwtTokenUtil.generateToken(tokenPayload, accessTokenTime);
-        String refreshToken = jwtTokenUtil.generateToken(tokenPayload, refreshTokenTime);
-
-        // Xóa mã RefreshToken cũ nếu tồn tại
-        refreshTokenRepository.deleteByUserId(user.get().getUserId());
-
-        // Save RefreshToken
-        RefreshToken refreshTokenDB = RefreshToken.builder()
-                .refreshToken(refreshToken)
-                .user(user.get())
-                .userAgent(request.getHeader("User-Agent"))
-                .ipAddress(request.getRemoteAddr())
-                .createTime(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")))
-                .expireTime(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusDays(30))
-                .build();
-
-        refreshTokenRepository.save(refreshTokenDB);
-
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(ApiResponse.builder()
-                        .status("success")
-                        .code(200)
-                        .message("Successfully logged in")
-                        .data(LoginResponse.builder()
-                                .accessToken(accessToken)
-                                .refreshToken(refreshToken)
-                                .userId(user.get().getUserId())
-                                .fullName(user.get().getFullName())
-                                .build())
-                        .build());
     }
 
     @Override
     public ResponseEntity<ApiResponse<?>> logout(Map<String, String> request) {
-        String refreshToken = request.get("refreshToken");
+        try {
+            String refreshToken = request.get("refreshToken");
 
-        Optional<RefreshToken> refreshTokenDB = refreshTokenRepository.findByRefreshToken(refreshToken);
-        if (refreshTokenDB.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            Optional<RefreshToken> refreshTokenDB = refreshTokenRepository.findByRefreshToken(refreshToken);
+            if (refreshTokenDB.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(404)
+                                .message("RefreshToken not found")
+                                .build());
+            }
+
+            // Delete refresh token
+            refreshTokenRepository.delete(refreshTokenDB.get());
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.builder()
+                            .status("success")
+                            .code(200)
+                            .message("Successfully logged out")
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.builder()
                             .status("error")
-                            .code(404)
-                            .message("RefreshToken not found")
+                            .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .message("Lỗi hệ thống: " + e.getMessage())
                             .build());
         }
-
-        // Delete refresh token
-        refreshTokenRepository.delete(refreshTokenDB.get());
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(ApiResponse.builder()
-                        .status("success")
-                        .code(200)
-                        .message("Successfully logged out")
-                        .build());
     }
 
     @Override
     public ResponseEntity<ApiResponse<?>> refreshToken(Map<String, String> request) {
-        String refreshToken = request.get("refreshToken");
+        try {
+            String refreshToken = request.get("refreshToken");
 
-        Optional<RefreshToken> refreshTokenDB = refreshTokenRepository.findByRefreshToken(refreshToken);
-        if (refreshTokenDB.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            Optional<RefreshToken> refreshTokenDB = refreshTokenRepository.findByRefreshToken(refreshToken);
+            if (refreshTokenDB.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(404)
+                                .message("Refresh Token not found")
+                                .build());
+            }
+
+            if (refreshTokenDB.get().getExpireTime().isBefore(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")))) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(401)
+                                .message("Invalid or expired refresh token")
+                                .build());
+            }
+
+
+            Optional<UserRole> userRole = userRoleRepository.findFirstByUser_UserId(refreshTokenDB.get().getUser().getUserId());
+            if (userRole.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(404)
+                                .message("User role not found")
+                                .build());
+            }
+
+            // Generate access token
+            final int accessTokenTime = 60 * 60;
+
+            TokenPayload tokenPayload = new TokenPayload();
+            tokenPayload.setUserId(refreshTokenDB.get().getUser().getUserId());
+            tokenPayload.setFullName(refreshTokenDB.get().getUser().getFullName());
+            tokenPayload.setRole(userRole.get().getRole().getRoleName());
+
+            String accessToken = jwtTokenUtil.generateToken(tokenPayload, accessTokenTime);
+
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.builder()
+                            .status("success")
+                            .code(200)
+                            .message("Refresh token success")
+                            .data(Map.of(
+                                    "accessToken", accessToken
+                            ))
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.builder()
                             .status("error")
-                            .code(404)
-                            .message("Refresh Token not found")
+                            .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .message("Lỗi hệ thống: " + e.getMessage())
                             .build());
         }
-
-        if (refreshTokenDB.get().getExpireTime().isBefore(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")))) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.builder()
-                            .status("error")
-                            .code(401)
-                            .message("Invalid or expired refresh token")
-                            .build());
-        }
-
-
-        Optional<UserRole> userRole = userRoleRepository.findFirstByUser_UserId(refreshTokenDB.get().getUser().getUserId());
-        if (userRole.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.builder()
-                            .status("error")
-                            .code(404)
-                            .message("User role not found")
-                            .build());
-        }
-
-        // Generate access token
-        final int accessTokenTime = 60 * 60;
-
-        TokenPayload tokenPayload = new TokenPayload();
-        tokenPayload.setUserId(refreshTokenDB.get().getUser().getUserId());
-        tokenPayload.setFullName(refreshTokenDB.get().getUser().getFullName());
-        tokenPayload.setRole(userRole.get().getRole().getRoleName());
-
-        String accessToken = jwtTokenUtil.generateToken(tokenPayload, accessTokenTime);
-
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(ApiResponse.builder()
-                        .status("success")
-                        .code(200)
-                        .message("Refresh token success")
-                        .data(Map.of(
-                                "accessToken", accessToken
-                        ))
-                        .build());
     }
 }

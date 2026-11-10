@@ -84,13 +84,22 @@ public class CategoryServiceImpl implements CategoryService {
         category.setCategoryName(categoryRequest.getCategoryName());
         category.setCreateTime(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")));
         category.setCategoryParent(null);
-        categoryRepository.save(category);
+        category = categoryRepository.save(category);
+
+        // Trả về danh mục mới sau khi thêm
+        CategoryResponse categoryResponse = CategoryResponse.builder()
+                .categoryId(category.getCategoryId())
+                .categoryName(category.getCategoryName())
+                .createTime(category.getCreateTime())
+                .updateTime(category.getUpdateTime())
+                .build();
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.builder()
                         .status("success")
                         .code(201)
-                        .message("Added category parent")
+                        .message("Thêm danh mục thành công")
+                        .data(categoryResponse)
                         .build());
     }
 
@@ -102,7 +111,7 @@ public class CategoryServiceImpl implements CategoryService {
                     .body(ApiResponse.builder()
                             .status("error")
                             .code(404)
-                            .message("Parent category does not exist")
+                            .message("Danh mục cha không tồn tại")
                             .build());
         }
 
@@ -110,13 +119,21 @@ public class CategoryServiceImpl implements CategoryService {
         category.setCategoryName(categoryRequest.getCategoryName());
         category.setCategoryParent(parentCategory.get());
         category.setCreateTime(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")));
-        categoryRepository.save(category);
+        category = categoryRepository.save(category);
+
+        CategoryResponse categoryResponse = CategoryResponse.builder()
+                .categoryId(category.getCategoryId())
+                .categoryName(category.getCategoryName())
+                .createTime(category.getCreateTime())
+                .updateTime(category.getUpdateTime())
+                .build();
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.builder()
                         .status("success")
                         .code(201)
                         .message("Added category children")
+                        .data(categoryResponse)
                         .build());
     }
 
@@ -128,17 +145,63 @@ public class CategoryServiceImpl implements CategoryService {
                     .body(ApiResponse.builder()
                             .status("error")
                             .code(404)
-                            .message("Category parent does not exist")
+                            .message("Danh mục không tồn tại")
                             .build());
         }
 
-        categoryRepository.delete(parentCategory.get());
+        Category category = parentCategory.get();
+
+        // Kiểm tra nếu là danh mục cha (không có parent)
+        if (category.getCategoryParent() == null) {
+            // Kiểm tra nếu có danh mục con
+            if (!category.getCategoryChildren().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(400)
+                                .message("Danh mục cha hiện đang chứa danh mục con")
+                                .build());
+            }
+            // Kiểm tra nếu có sản phẩm
+            if (!category.getProducts().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(400)
+                                .message("Danh mục hiện đang có sản phẩm tồn tại")
+                                .build());
+            }
+        }
+        // Nếu là danh mục con (có parent)
+        else {
+            // Kiểm tra nếu có sản phẩm
+            if (!category.getProducts().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(400)
+                                .message("Danh mục hiện đang có sản phẩm tồn tại")
+                                .build());
+            }
+            // Danh mục con không thể có danh mục con khác (theo thiết kế của bạn)
+            // Nhưng vẫn kiểm tra để chắc chắn
+            if (!category.getCategoryChildren().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(400)
+                                .message("Danh mục con không thể chứa danh mục khác")
+                                .build());
+            }
+        }
+
+        categoryRepository.delete(category);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.builder()
                         .status("success")
                         .code(200)
-                        .message("Deleted category successfully")
+                        .message("Xóa danh mục thành công")
                         .build());
     }
 
@@ -150,20 +213,20 @@ public class CategoryServiceImpl implements CategoryService {
                     .body(ApiResponse.builder()
                             .status("error")
                             .code(404)
-                            .message("Category does not exist")
+                            .message("Danh mục không tồn tại")
                             .build());
         }
 
         // Check nếu parentId là khác 0 -> update Category con, ngược lại
-        Category parentCategory = null;
-        if (categoryUpdate.getParentId() != 0) {
+        Category categoryUpdated = null;
+        if (categoryUpdate.getParentId() != null) {
             Optional<Category> parentCategoryOptional = categoryRepository.findById(categoryUpdate.getParentId());
             if (parentCategoryOptional.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.builder()
                                 .status("error")
                                 .code(404)
-                                .message("Category Parent does not exist")
+                                .message("Danh mục cha không tồn tại")
                                 .build());
             }
             if (categoryId == parentCategoryOptional.get().getCategoryId()) {
@@ -175,21 +238,34 @@ public class CategoryServiceImpl implements CategoryService {
                                 .build());
             }
 
-            parentCategory = parentCategoryOptional.get();
+//            categoryUpdated = parentCategoryOptional.get();
+            category.get().setCategoryName(categoryUpdate.getCategoryName());
+            category.get().setCategoryParent(parentCategoryOptional.get());
+            category.get().setUpdateTime(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")));
+            categoryUpdated = categoryRepository.save(category.get());
+        }
+        // Cập nhật thông tin danh mục cha
+        else {
+            category.get().setCategoryName(categoryUpdate.getCategoryName());
+            category.get().setUpdateTime(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")));
+            categoryUpdated = categoryRepository.save(category.get());
         }
 
-        category.get().setCategoryName(categoryUpdate.getCategoryName());
-        category.get().setCategoryParent(parentCategory);
-        category.get().setUpdateTime(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")));
-        categoryRepository.save(category.get());
 
 
+        CategoryResponse categoryResponse = CategoryResponse.builder()
+                .categoryId(categoryUpdated.getCategoryId())
+                .categoryName(categoryUpdated.getCategoryName())
+                .createTime(categoryUpdated.getCreateTime())
+                .updateTime(categoryUpdated.getUpdateTime())
+                .build();
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.builder()
                         .status("success")
                         .code(200)
-                        .message("Updated category successfully")
+                        .message("Cập nhật danh mục thành công")
+                        .data(categoryResponse)
                         .build());
     }
 

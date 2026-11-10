@@ -124,33 +124,42 @@ public class AttributeValueServiceImpl implements AttributeValueService {
 
     @Override
     public ResponseEntity<ApiResponse<?>> getAttributeValues(int attributeId) {
-        Optional<Attribute> attribute = attributeRepository.findById(attributeId);
-        if (attribute.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        try {
+            Optional<Attribute> attribute = attributeRepository.findById(attributeId);
+            if (attribute.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(HttpStatus.NOT_FOUND.value())
+                                .message("Thuộc tính: " + attributeId + " không tồn tại")
+                                .build());
+            }
+
+            List<AttributeValue> attributeValues = attribute.get().getAttributeValues();
+
+            List<AttributeValueResponse> attributeValueResponses = attributeValues.stream()
+                    .map(attributeValue -> AttributeValueResponse.builder()
+                            .attributeValueId(attributeId)
+                            .value(attributeValue.getValue())
+                            .hexCode(attributeValue.getHexCode())
+                            .build())
+                    .toList();
+
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.builder()
+                            .status("success")
+                            .code(HttpStatus.OK.value())
+                            .message("Lấy tất cả giá trị của thuộc tính: " + attribute.get().getName())
+                            .data(attributeValueResponses)
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.builder()
                             .status("error")
-                            .code(HttpStatus.NOT_FOUND.value())
-                            .message("Thuộc tính: " + attributeId + " không tồn tại")
+                            .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .message("Lỗi hệ thống: " + e.getMessage())
                             .build());
         }
-
-        List<AttributeValue> attributeValues = attribute.get().getAttributeValues();
-
-        List<AttributeValueResponse> attributeValueResponses = attributeValues.stream()
-                .map(attributeValue -> AttributeValueResponse.builder()
-                        .attributeValueId(attributeId)
-                        .value(attributeValue.getValue())
-                        .hexCode(attributeValue.getHexCode())
-                        .build())
-                .toList();
-
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(ApiResponse.builder()
-                        .status("success")
-                        .code(HttpStatus.OK.value())
-                        .message("Get all values belong to attribute: " + attribute.get().getName())
-                        .data(attributeValueResponses)
-                        .build());
     }
 
 

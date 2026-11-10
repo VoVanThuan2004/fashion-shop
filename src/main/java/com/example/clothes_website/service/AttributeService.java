@@ -10,7 +10,9 @@ import java.util.List;
 public interface AttributeService {
     ResponseEntity<ApiResponse<?>> addAttribute(AttributeRequest attributeRequest);
 
-    List<AttributeResponse> getAllAttributes();
+    ResponseEntity<ApiResponse<?>> getAllAttributes();
 
     ResponseEntity<ApiResponse<?>> updateAttribute(int attributeId, AttributeRequest attributeRequest);
+
+    ResponseEntity<ApiResponse<?>> deleteAttribute(int attributeId);
 }

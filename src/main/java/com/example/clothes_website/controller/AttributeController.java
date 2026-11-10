@@ -24,7 +24,7 @@ public class AttributeController {
     }
 
     @GetMapping("/api/v1/attribute/")
-    public List<AttributeResponse> getAllAttributes() {
+    public ResponseEntity<ApiResponse<?>> getAllAttributes() {
         return attributeService.getAllAttributes();
     }
 
@@ -32,5 +32,11 @@ public class AttributeController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> updateAttribute(@PathVariable int attributeId, @RequestBody AttributeRequest attributeRequest) {
         return attributeService.updateAttribute(attributeId, attributeRequest);
+    }
+
+    @DeleteMapping("/api/v1/attribute/{attributeId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<?>> deleteAttribute(@PathVariable int attributeId) {
+        return attributeService.deleteAttribute(attributeId);
     }
 }

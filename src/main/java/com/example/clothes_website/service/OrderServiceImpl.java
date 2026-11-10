@@ -82,6 +82,20 @@ public class OrderServiceImpl implements OrderService {
                             .build());
         }
 
+        // Kiểm tra số lượng đặt phải luôn nhỏ hơn số lượng còn trong kho
+        List<CartItem> cartItems = cart.get().getCartItems();
+        for (CartItem cartItem : cartItems) {
+            int quantity = cartItem.getQuantity();
+            if (quantity > cartItem.getProductVariant().getInventory().getQuantity()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.builder()
+                                .status("error")
+                                .code(HttpStatus.BAD_REQUEST.value())
+                                .message("Sản phẩm " + cartItem.getProductVariant().getVariantName() + " không đủ số lượng hàng để đặt")
+                                .build());
+            }
+        }
+
         // Kiểm tra có sử dụng mã coupon không
         Optional<Coupon> coupon = Optional.empty();
         if (orderRequest.getCouponId() != null) {
@@ -108,7 +122,6 @@ public class OrderServiceImpl implements OrderService {
 
 
         // Thanh toán
-        List<CartItem> cartItems = cart.get().getCartItems();
         Integer totalQuantity = cart.get().getTotalQuantity();
         Double totalPrice = cart.get().getTotalPrice();
         String fullName = user.get().getFullName();
@@ -170,6 +183,11 @@ public class OrderServiceImpl implements OrderService {
                     Inventory inventory = orderItem.getProductVariant().getInventory();
                     inventory.setQuantity(inventory.getQuantity() - orderItem.getQuantity());
                     inventory.setUpdateTime(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")));
+
+                    // Nếu sau khi trừ số lượng tồn kho - sản phẩm còn số lượng 0 (tắt sản phẩm)
+                    if (inventory.getQuantity() == 0) {
+                        inventory.getProductVariant().setActive(false);
+                    }
                     inventories.add(inventory);
                 }
                 inventoryRepository.saveAll(inventories);
@@ -353,7 +371,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public ResponseEntity<ApiResponse<?>> getAllOrders(int userId, int page, int size) {
+    public ResponseEntity<ApiResponse<?>> getAllOrders(int userId, int page, int size, LocalDateTime startTime, LocalDateTime endTime) {
         // Kiểm tra user có tồn tại
         Optional<Users> user = userRepository.findById(userId);
         if (user.isEmpty()) {
@@ -372,7 +390,13 @@ public class OrderServiceImpl implements OrderService {
                 Sort.by("createTime").descending()
         );
 
-        Page<Order> orders = orderRepository.findAll(sortedPageable);
+        // Nếu không nhập startTime, endTime -> Lấy ra tất cả Orders
+        Page<Order> orders = null;
+        if (startTime == null && endTime == null) {
+            orders = orderRepository.findAll(sortedPageable);
+        }
+
+        orders = orderRepository.findAllOrdersByTime(startTime, endTime, sortedPageable);
 
         // Chuyển sang Response
         Page<OrderResponse> orderResponses = orders

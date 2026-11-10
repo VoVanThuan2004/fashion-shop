@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -23,5 +24,5 @@ public class Attribute {
     private int priority;
 
     @OneToMany(mappedBy = "attribute", fetch = FetchType.LAZY)
-    private List<AttributeValue> attributeValues;
+    private List<AttributeValue> attributeValues = new ArrayList<>();
 }

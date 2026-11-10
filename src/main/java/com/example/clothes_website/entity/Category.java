@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -28,9 +29,8 @@ public class Category {
 
     // 1 category cha có nhiều category con
     @OneToMany(mappedBy = "categoryParent", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Category> categoryChildren;
+    private List<Category> categoryChildren = new ArrayList<>();
 
     @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
-    private List<Product> products;
-
+    private List<Product> products = new ArrayList<>();
 }
