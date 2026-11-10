@@ -6,8 +6,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -60,7 +58,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
         FROM Order o
         JOIN OrderItem oi ON o.orderId = oi.order.orderId
         JOIN ProductVariant pv ON oi.productVariant.productVariantId = pv.productVariantId
-        WHERE FUNCTION('YEAR', o.createTime) = :year
+        WHERE YEAR(o.createTime) = :year
         GROUP BY MONTH(o.createTime)
         ORDER BY MONTH(o.createTime)
     """)
@@ -76,7 +74,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
         FROM Order o
         JOIN OrderItem oi ON o.orderId = oi.order.orderId
         JOIN ProductVariant pv ON oi.productVariant.productVariantId = pv.productVariantId
-        WHERE FUNCTION('YEAR', o.createTime) = :year
+        WHERE YEAR(o.createTime) = :year
         GROUP BY FLOOR((MONTH(o.createTime) - 1) / 3)
         ORDER BY FLOOR((MONTH(o.createTime) - 1) / 3)
     """)
@@ -85,7 +83,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     // 3. Thống kê theo tuần
     @Query("""
         SELECT 
-            FUNCTION('DAYOFWEEK', o.createTime) AS dayOfWeek,
+            DAYOFWEEK(o.createTime) AS dayOfWeek,
             COUNT(o.orderId) AS totalOrders,
             SUM(o.totalPrice) AS totalRevenue,
             SUM((pv.sellingPrice - pv.originalPrice) * oi.quantity) AS totalProfit 
@@ -93,8 +91,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
         JOIN OrderItem oi ON o.orderId = oi.order.orderId
         JOIN ProductVariant pv ON oi.productVariant.productVariantId = pv.productVariantId
         WHERE o.createTime >= :startTime AND o.createTime < :endTime
-        GROUP BY FUNCTION('DAYOFWEEK', o.createTime)
-        ORDER BY FUNCTION('DAYOFWEEK', o.createTime)
+        GROUP BY DAYOFWEEK(o.createTime)
+        ORDER BY DAYOFWEEK(o.createTime)
     """)
     List<Object[]> getWeeklyStatistics(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
