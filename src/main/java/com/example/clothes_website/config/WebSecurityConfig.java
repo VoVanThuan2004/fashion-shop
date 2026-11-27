@@ -1,6 +1,9 @@
-package com.example.clothes_website.security;
+package com.example.clothes_website.config;
 
-import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
+import com.example.clothes_website.security.CustomAccessDeniedHandler;
+import com.example.clothes_website.security.CustomAuthenticationEntryPoint;
+import com.example.clothes_website.security.JwtRequestFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -36,6 +39,9 @@ public class WebSecurityConfig {
         this.customAccessDeniedHandler = customAccessDeniedHandler;
     }
 
+    @Value("${fe.url}")
+    private String feUrl;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -46,19 +52,19 @@ public class WebSecurityConfig {
         httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/admin/**").permitAll()
-                        .requestMatchers("/api/v1/register/users").permitAll()
-                        .requestMatchers("/api/v1/recovery-password").permitAll()
-                        .requestMatchers("/api/v1/verify-otp/password").permitAll()
-                        .requestMatchers("/api/v1/update/users/**").permitAll()
-                        .requestMatchers("/api/v1/login").permitAll()
-                        .requestMatchers("/api/v1/logout").permitAll()
-                        .requestMatchers("/api/v1/refresh-token").permitAll()
-                        .requestMatchers(HttpMethod.GET,"/api/v1/category-parent/**").permitAll()
-                        .requestMatchers(HttpMethod.GET,"/api/v1/category/**").permitAll()
-                        .requestMatchers("/api/v1/brand**").permitAll()
-                        .requestMatchers("/api/v1/products**").permitAll()
-                        .requestMatchers("/api/v1/products/**").permitAll()
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html").permitAll()
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/auth/login").permitAll()
+                        .requestMatchers("/api/v1/auth/register").permitAll()
+                        .requestMatchers("/api/v1/auth/verify-otp").permitAll()
+                        .requestMatchers("/api/v1/auth/recovery-password").permitAll()
+                        .requestMatchers("/api/v1/auth/verify-otp/password").permitAll()
+                        .requestMatchers("/api/v1/auth/logout").permitAll()
+                        .requestMatchers("/api/v1/auth/refresh-token").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/v1/categories/**").permitAll()
                         .requestMatchers("/api/v1/variants/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/attribute/").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/attribute-value/**").permitAll()
@@ -88,7 +94,7 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000")); // Origin của client
+        configuration.setAllowedOrigins(List.of(feUrl)); // Origin của client
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of(
                 "Authorization",

@@ -6,7 +6,8 @@ import com.example.clothes_website.entity.UserRole;
 import com.example.clothes_website.repository.RoleRepository;
 import com.example.clothes_website.repository.UserRepository;
 import com.example.clothes_website.repository.UserRoleRepository;
-import io.jsonwebtoken.ExpiredJwtException;
+import com.example.clothes_website.utils.JwtTokenUtil;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,21 +42,17 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             token = requestHeader.substring(7);
             try {
                 tokenPayload = jwtTokenUtil.getTokenPayload(token);
-            } catch (ExpiredJwtException e) {
-                System.out.println("JWT token expired");
+            } catch (JwtException | IllegalArgumentException e) {
+                tokenPayload = null;
             }
-
-        }
-        else {
-            System.out.println("Authorization header is missing");
         }
 
         if (tokenPayload != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             Optional<Users> user = userRepository.findById(tokenPayload.getUserId());
             if (user.isPresent()) {
                 Optional<UserRole> userRole = userRoleRepository.findFirstByUser_UserId(user.get().getUserId());
-                Optional<Role> role = roleRepository.findById(userRole.get().getRole().getRoleId());
-                if (role.isPresent()) {
+                Optional<Role> role = userRole.flatMap(item -> roleRepository.findById(item.getRole().getRoleId()));
+                if (role.isPresent() && user.get().isActive()) {
                     // Chuyen Object User -> TokenPayload
                     TokenPayload tokenPayload1 = TokenPayload.builder()
                             .userId(user.get().getUserId())

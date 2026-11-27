@@ -24,9 +24,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).
                 body(ApiResponse.builder()
                         .status("error")
-                        .code(HttpStatus.BAD_REQUEST.value())
+                        .code(HttpStatus.NOT_FOUND.value())
                         .message(e.getMessage())
                         .build());
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiResponse<?>> handleAuthenticationException(AuthenticationException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).
+                body(ApiResponse.builder()
+                        .status("error")
+                        .code(HttpStatus.UNAUTHORIZED.value())
+                        .message(e.getMessage())
+                        .build());
+
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -51,8 +62,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<?>> handleException(Exception e) {
-        e.printStackTrace();
-        System.out.println(e);
         ApiResponse<?> apiResponse = ApiResponse.builder()
                 .status("error")
                 .code(HttpStatus.INTERNAL_SERVER_ERROR.value())

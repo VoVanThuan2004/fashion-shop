@@ -2,8 +2,9 @@ package com.example.clothes_website.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @AllArgsConstructor
@@ -15,11 +16,17 @@ public class RefreshToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int refreshTokenId;
 
-    private String refreshToken;
+    @Column(name = "token_hash", nullable = false, unique = true, length = 64)
+    private String tokenHash;
+
     private String userAgent;
     private String ipAddress;
-    private LocalDateTime createTime;
-    private LocalDateTime expireTime;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private Instant createdAt;
+
+    private Instant expiredAt;
 
     @ManyToOne
     @JoinColumn(name = "user_id")

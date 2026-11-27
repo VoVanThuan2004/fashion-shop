@@ -9,8 +9,9 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Integer> {
-    @Query("select re from RefreshToken re where re.refreshToken = :refreshToken")
-    Optional<RefreshToken> findByRefreshToken(@Param("refreshToken") String refreshToken);
+    Optional<RefreshToken> findByTokenHash(String tokenHash);
+
+    void deleteByTokenHash(String tokenHash);
 
     @Modifying
     @Query("""
