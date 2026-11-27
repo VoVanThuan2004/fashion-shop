@@ -2,16 +2,32 @@ package com.example.clothes_website.repository;
 
 import com.example.clothes_website.entity.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
 import java.util.List;
+import java.util.Optional;
 
 public interface CategoryRepository extends JpaRepository<Category, Integer> {
 
-    @Query("select category from Category category where category.categoryParent is null")
-    List<Category> findAllCategoryParent();
+    List<Category> findByCategoryParentIsNullAndDeletedFalseOrderByCategoryNameAsc();
 
-    @Query("select category from Category category where category.categoryParent.categoryId = :categoryParentId")
-    List<Category> getAllCategoryByParentId(@Param("categoryParentId") int categoryParentId);
+    List<Category> findByCategoryParentCategoryIdAndDeletedFalseOrderByCategoryNameAsc(int parentId);
+
+    Optional<Category> findByCategoryIdAndDeletedFalse(int categoryId);
+
+    boolean existsByCategoryNameIgnoreCaseAndDeletedFalseAndCategoryParentIsNull(String name);
+
+    boolean existsByCategoryNameIgnoreCaseAndDeletedFalseAndCategoryParentCategoryId(
+            String name,
+            int parentId
+    );
+
+    boolean existsByCategoryNameIgnoreCaseAndDeletedFalseAndCategoryParentIsNullAndCategoryIdNot(
+            String name,
+            int categoryId
+    );
+
+    boolean existsByCategoryNameIgnoreCaseAndDeletedFalseAndCategoryParentCategoryIdAndCategoryIdNot(
+            String name,
+            int parentId,
+            int categoryId
+    );
 }

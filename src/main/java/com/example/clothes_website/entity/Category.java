@@ -23,11 +23,11 @@ public class Category {
     private String categoryName;
 
     @CreationTimestamp
-    private Instant createTime;
+    @Column(updatable = false)
+    private Instant createdAt;
 
     @UpdateTimestamp
-    @Column(updatable = false)
-    private Instant updateTime;
+    private Instant updatedAt;
 
     @Builder.Default
     private boolean deleted = false;
