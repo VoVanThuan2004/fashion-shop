@@ -1,13 +1,15 @@
 package com.example.clothes_website.dto.response;
 
 import lombok.Builder;
+import lombok.Getter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
+@Getter
 @Builder
 public class BrandResponse {
     private int brandId;
     private String brandName;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private Instant createdAt;
+    private Instant updatedAt;
 }

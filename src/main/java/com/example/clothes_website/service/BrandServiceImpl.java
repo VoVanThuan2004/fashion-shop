@@ -4,14 +4,15 @@ import com.example.clothes_website.dto.response.ApiResponse;
 import com.example.clothes_website.dto.request.BrandRequest;
 import com.example.clothes_website.dto.response.BrandResponse;
 import com.example.clothes_website.entity.Brand;
+import com.example.clothes_website.exception.BadRequestException;
+import com.example.clothes_website.exception.ResourceNotFoundException;
+import com.example.clothes_website.mapper.BrandMapper;
 import com.example.clothes_website.repository.BrandRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,87 +20,55 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class BrandServiceImpl implements BrandService {
     private final BrandRepository brandRepository;
+    private final BrandMapper brandMapper;
 
     @Override
-    public ResponseEntity<ApiResponse<List<BrandResponse>>> getAllBrands() {
+    public List<BrandResponse> getAllBrands() {
         List<Brand> brands = brandRepository.findAll();
 
-        List<BrandResponse> brandResponses = brands.stream()
-                    .map(brand -> BrandResponse.builder()
-                            .brandId(brand.getBrandId())
-                            .brandName(brand.getBrandName())
-                            .createTime(brand.getCreateTime())
-                            .updateTime(brand.getUpdateTime())
-                            .build())
-                    .toList();
-
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(ApiResponse.<List<BrandResponse>>builder()
-                        .status("success")
-                        .code(200)
-                        .message("Fetch all brands successfully")
-                        .data(brandResponses)
-                        .build());
+        return brandMapper.mapToResponseList(brands);
     }
 
     @Override
-    public ResponseEntity<ApiResponse<?>> addBrand(BrandRequest brandRequest) {
+    public BrandResponse addBrand(BrandRequest brandRequest) {
+        // Validate tên thương hiệu có hợp lệ hay không
+        if (brandRepository.existsByBrandNameIgnoreCaseAndIsDeletedFalse(brandRequest.getBrandName().trim())) {
+            throw new BadRequestException("Tên thương hiệu đã tồn tại");
+        }
+
         Brand brand = new Brand();
         brand.setBrandName(brandRequest.getBrandName());
-        brand.setCreateTime(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")));
         brandRepository.save(brand);
 
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.builder()
-                        .status("success")
-                        .code(201)
-                        .message("Add brand successfully")
-                        .build());
+        return brandMapper.mapToResponse(brand);
     }
 
     @Override
-    public ResponseEntity<ApiResponse<?>> updateBrand(int brandId, BrandRequest brandRequest) {
-        Optional<Brand> brand = brandRepository.findById(brandId);
-        if (brand.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.builder()
-                            .status("success")
-                            .code(404)
-                            .message("Brand not found")
-                            .build());
+    public BrandResponse updateBrand(int brandId, BrandRequest brandRequest) {
+        Brand brand = getBrandById(brandId);
+
+        // Validate tên thương hiệu có hợp lệ hay không
+        if (brandRepository.existsByBrandNameIgnoreCaseAndIsDeletedFalse(brandRequest.getBrandName())) {
+            throw new BadRequestException("Tên thương hiệu đã tồn tại");
         }
 
-        brand.get().setBrandName(brandRequest.getBrandName());
-        brand.get().setUpdateTime(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")));
-        brandRepository.save(brand.get());
+        brand.setBrandName(brandRequest.getBrandName());
+        brandRepository.save(brand);
 
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(ApiResponse.builder()
-                        .status("success")
-                        .code(200)
-                        .message("Update brand successfully")
-                        .build());
+        return brandMapper.mapToResponse(brand);
     }
 
     @Override
-    public ResponseEntity<ApiResponse<?>> deleteBrand(int brandId) {
-        Optional<Brand> brand = brandRepository.findById(brandId);
-        if (brand.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.builder()
-                            .status("success")
-                            .code(404)
-                            .message("Brand not found")
-                            .build());
-        }
+    public void deleteBrand(int brandId) {
+        Brand brand = getBrandById(brandId);
 
-        brandRepository.delete(brand.get());
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(ApiResponse.builder()
-                        .status("success")
-                        .code(200)
-                        .message("Delete brand successfully")
-                        .build());
+        brand.setIsDeleted(true);
+        brandRepository.save(brand);
+    }
+
+    private Brand getBrandById(int brandId) {
+        return brandRepository.findById(brandId)
+                .orElseThrow(() -> new ResourceNotFoundException("Thương hiệu không tồn tại"));
     }
 
 }

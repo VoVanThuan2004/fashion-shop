@@ -8,11 +8,11 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 
 public interface BrandService {
-    ResponseEntity<ApiResponse<List<BrandResponse>>> getAllBrands();
+    List<BrandResponse> getAllBrands();
 
-    ResponseEntity<ApiResponse<?>> addBrand(BrandRequest brandRequest);
+    BrandResponse addBrand(BrandRequest brandRequest);
 
-    ResponseEntity<ApiResponse<?>> updateBrand(int brandId, BrandRequest brandRequest);
+    BrandResponse updateBrand(int brandId, BrandRequest brandRequest);
 
-    ResponseEntity<ApiResponse<?>> deleteBrand(int brandId);
+    void deleteBrand(int brandId);
 }

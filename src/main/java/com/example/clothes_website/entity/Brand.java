@@ -1,14 +1,15 @@
 package com.example.clothes_website.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Builder
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
@@ -19,8 +20,16 @@ public class Brand {
     private int brandId;
 
     private String brandName;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private Instant createdAt;
+
+    @UpdateTimestamp
+    private Instant updatedAt;
+
+    @Builder.Default
+    private Boolean isDeleted = false;
 
     @OneToMany(mappedBy = "brand", fetch = FetchType.LAZY)
     private List<Product> products;
