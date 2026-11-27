@@ -1,20 +1,40 @@
 package com.example.clothes_website.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 
-import java.util.List;
+import java.time.Instant;
 
 @Entity
+@Table(
+        name = "wish_list",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_wishlist_user_product",
+                columnNames = {"user_id", "product_id"}
+        )
+)
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter @Setter
+@Builder
+@Getter
 public class WishList {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int wishListId;
+    private Long wishListId;
 
-    @OneToOne
-    @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private Users user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private Instant addedAt;
 }

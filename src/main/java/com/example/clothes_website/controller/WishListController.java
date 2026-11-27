@@ -1,39 +1,104 @@
 package com.example.clothes_website.controller;
 
 import com.example.clothes_website.dto.response.ApiResponse;
+import com.example.clothes_website.dto.response.WishListResponse;
 import com.example.clothes_website.security.CustomUserDetails;
 import com.example.clothes_website.service.WishListService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/api/v1/wish-lists")
 public class WishListController {
     private final WishListService wishListService;
 
-    // Xem danh sách wish list
-    @GetMapping("/api/v1/wishlist/")
-    public ResponseEntity<ApiResponse<?>> getWishList(
-            @RequestParam(value = "page") int page,
-            @RequestParam(value = "size", defaultValue = "20") int size
+    @PostMapping("/{productId}")
+    public ResponseEntity<ApiResponse<?>> addToWishList(
+            @PathVariable Integer productId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
     ) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
-        int userId = customUserDetails.getId();
+        wishListService.addToWishList(productId, customUserDetails.getUserId());
 
-        return wishListService.getWishList(userId, page, size);
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                ApiResponse.builder()
+                        .status("success")
+                        .code(HttpStatus.CREATED.value())
+                        .message("Added product in wish list")
+                        .build()
+        );
     }
 
-    // Chọn sản phẩm vào danh mục yêu thích
-    @PostMapping("/api/v1/wishlist/{productId}")
-    public ResponseEntity<ApiResponse<?>> addProductToWishList(@PathVariable int productId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
-        int userId = customUserDetails.getId();
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<ApiResponse<?>> removeFromWishList(
+            @PathVariable Integer productId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
+    ) {
+        wishListService.removeFromWishList(productId, customUserDetails.getUserId());
 
-        return wishListService.addProductToWishList(productId, userId);
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.builder()
+                        .status("success")
+                        .code(HttpStatus.OK.value())
+                        .message("Remove product from wish list")
+                        .build()
+        );
+    }
+
+    // Xóa toàn bộ wish list của user
+    @DeleteMapping("")
+    public ResponseEntity<ApiResponse<?>> clearMyWishList(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
+    ) {
+        wishListService.clearMyWishList(customUserDetails.getUserId());
+
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.builder()
+                        .status("success")
+                        .code(HttpStatus.OK.value())
+                        .message("Clear all wish lists")
+                        .build()
+        );
+    }
+
+    @GetMapping("")
+    public ResponseEntity<ApiResponse<Page<WishListResponse>>> getWishLists(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<WishListResponse> wishListResponses = wishListService.getWishLists(customUserDetails.getUserId(), page, size);
+
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<Page<WishListResponse>>builder()
+                        .status("success")
+                        .code(HttpStatus.OK.value())
+                        .message("Get wish lists")
+                        .data(wishListResponses)
+                        .build()
+        );
+    }
+
+    @GetMapping("/check/{productId}")
+    public ResponseEntity<ApiResponse<Boolean>> checkProductInWishList(
+            @PathVariable Integer productId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
+    ) {
+        Boolean isProductInWishList = wishListService.checkProductInWishList(productId, customUserDetails.getUserId());
+
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.<Boolean>builder()
+                        .status("success")
+                        .code(HttpStatus.OK.value())
+                        .message("Check product in wish list")
+                        .data(isProductInWishList)
+                        .build()
+        );
     }
 }

@@ -41,8 +41,8 @@ public class Users {
     private List<Address> addresses;
 
     // Sản phẩm yêu thích của người dùng
-    @OneToOne(mappedBy = "user")
-    private WishList wishlist;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<WishList> wishLists;
 
     // Giỏ hàng
     @OneToOne(mappedBy = "user")
