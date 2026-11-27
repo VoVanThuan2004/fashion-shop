@@ -37,4 +37,24 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
             @Param("attributeValueIds") List<Integer> attributeValueIds,
             @Param("size") int size
     );
+
+    List<ProductVariant> findByProductProductId(int productId);
+
+    @Query("select distinct pv from ProductVariant pv " +
+            "left join fetch pv.inventory " +
+            "left join fetch pv.variantOptionValues pvov " +
+            "left join fetch pvov.optionValue pov " +
+            "left join fetch pov.option " +
+            "where pv.product.productId = :productId and pv.isActive = true " +
+            "order by pv.productVariantId asc")
+    List<ProductVariant> findActiveDetailByProductId(@Param("productId") int productId);
+
+    boolean existsByProductProductIdAndOptionSignature(int productId, String optionSignature);
+
+    boolean existsByProductProductIdAndOptionSignatureAndProductVariantIdNot(
+            int productId, String optionSignature, int productVariantId);
+
+    boolean existsBySku(String sku);
+
+    boolean existsBySkuAndProductVariantIdNot(String sku, int productVariantId);
 }

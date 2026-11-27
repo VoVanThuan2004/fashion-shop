@@ -3,6 +3,8 @@ package com.example.clothes_website.dto.response;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Setter @Getter
@@ -14,6 +16,6 @@ public class ProductResponse {
     private String description;
     private String imagePath;
     private boolean isActive;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private Instant createdAt;
+    private Instant updatedAt;
 }

@@ -14,19 +14,12 @@ public class CloudinaryService {
     private final Cloudinary cloudinary;
     private final String upload_preset;
 
-    public CloudinaryService(@Value("${cloudinary.cloud_name}") String cloud_name,
-                             @Value("${cloudinary.api_key}") String api_key,
-                             @Value("${cloudinary.api_secret}") String api_secret,
+    public CloudinaryService(Cloudinary cloudinary,
                              @Value("${cloudinary.upload_preset}") String upload_preset
     )
     {
         this.upload_preset = upload_preset;
-        this.cloudinary = new Cloudinary(ObjectUtils.asMap(
-                "cloud_name", cloud_name,
-                "api_key", api_key,
-                "api_secret", api_secret
-        )
-        );
+        this.cloudinary = cloudinary;
     }
 
     public String uploadImage(MultipartFile file) throws IOException {
